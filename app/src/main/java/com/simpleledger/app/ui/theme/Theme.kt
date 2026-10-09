@@ -69,6 +69,10 @@ object LedgerColors {
     val gaveButton = Color(0xFFA11A12)
     val gotButton = Color(0xFF1B5E20)
 
+    /** Bright yellow with near-black text (over 12:1 contrast), matching the app icon. */
+    val highlight = Color(0xFFFFC107)
+    val onHighlight = Color(0xFF1A1A1A)
+
     val gaveText: Color
         @Composable get() = if (isSystemInDarkTheme()) Color(0xFFFFB4A9) else Color(0xFFA11A12)
 

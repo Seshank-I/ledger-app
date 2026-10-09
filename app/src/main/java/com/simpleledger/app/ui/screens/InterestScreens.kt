@@ -8,6 +8,8 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -109,7 +111,7 @@ fun SetInterestScreen(personId: String, onBack: () -> Unit) {
                 Text(stringResource(R.string.rate_invalid), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.error)
             }
             Text(stringResource(R.string.start_date, friendlyDate(vm.from)), style = MaterialTheme.typography.titleMedium)
-            BigOutlinedButton(stringResource(R.string.change_date), { showPicker = true })
+            BigOutlinedButton(stringResource(R.string.change_date), { showPicker = true }, icon = Icons.Filled.DateRange)
             Text(stringResource(R.string.interest_note), style = MaterialTheme.typography.bodyLarge)
             BigButton(stringResource(R.string.save), {
                 if (parsed == null) showError = true else vm.save(parsed, onBack)

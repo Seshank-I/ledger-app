@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -26,6 +27,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -39,6 +41,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -56,7 +59,7 @@ private const val DAY_MS = 86_400_000L
 /** Every screen: a tall top bar with a labelled Back button (no icon-only buttons). */
 @Composable
 fun ScreenScaffold(
-    title: String,
+    title: String?,
     onBack: (() -> Unit)?,
     actions: @Composable RowScope.() -> Unit = {},
     content: @Composable (PaddingValues) -> Unit,
@@ -77,13 +80,15 @@ fun ScreenScaffold(
                             Text(stringResource(R.string.back), style = MaterialTheme.typography.titleMedium)
                         }
                     }
-                    Text(
-                        text = title,
-                        style = MaterialTheme.typography.titleLarge,
-                        modifier = Modifier
-                            .weight(1f)
-                            .padding(horizontal = 8.dp),
-                    )
+                    if (title != null) {
+                        Text(
+                            text = title,
+                            style = MaterialTheme.typography.titleLarge,
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(horizontal = 8.dp),
+                        )
+                    }
                     actions()
                 }
             }
@@ -115,8 +120,28 @@ fun BigButton(
     }
 }
 
+/** Bright yellow button for the single most important action on a screen. */
 @Composable
-fun BigOutlinedButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true) {
+fun HighlightButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    Button(
+        onClick = onClick,
+        modifier = modifier.heightIn(min = 60.dp),
+        shape = RoundedCornerShape(14.dp),
+        colors = ButtonDefaults.buttonColors(containerColor = LedgerColors.highlight, contentColor = LedgerColors.onHighlight),
+        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+    ) {
+        Text(text, style = MaterialTheme.typography.labelLarge, textAlign = TextAlign.Center)
+    }
+}
+
+@Composable
+fun BigOutlinedButton(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    icon: ImageVector? = null,
+) {
     OutlinedButton(
         onClick = onClick,
         enabled = enabled,
@@ -128,6 +153,10 @@ fun BigOutlinedButton(text: String, onClick: () -> Unit, modifier: Modifier = Mo
         colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onSurface),
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
     ) {
+        if (icon != null) {
+            Icon(icon, contentDescription = null, modifier = Modifier.size(30.dp))
+            Spacer(Modifier.width(12.dp))
+        }
         Text(text, style = MaterialTheme.typography.titleMedium, textAlign = TextAlign.Center)
     }
 }
@@ -172,13 +201,17 @@ fun BigTextField(
     label: String,
     keyboardType: KeyboardType = KeyboardType.Text,
     modifier: Modifier = Modifier,
+    multiLine: Boolean = false,
 ) {
+    // A multi-line box grows with the text, so the start of a long note never scrolls out of sight.
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
         label = { Text(label) },
         textStyle = MaterialTheme.typography.titleLarge,
-        singleLine = true,
+        singleLine = !multiLine,
+        minLines = if (multiLine) 3 else 1,
+        maxLines = if (multiLine) 8 else 1,
         keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
         modifier = modifier.fillMaxWidth(),
     )

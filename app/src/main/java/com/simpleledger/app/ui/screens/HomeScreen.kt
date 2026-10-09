@@ -31,8 +31,8 @@ import com.simpleledger.app.domain.Money
 import com.simpleledger.app.domain.needsBackupReminder
 import com.simpleledger.app.ui.appContainer
 import com.simpleledger.app.ui.components.Banner
-import com.simpleledger.app.ui.components.BigButton
 import com.simpleledger.app.ui.components.BigOutlinedButton
+import com.simpleledger.app.ui.components.HighlightButton
 import com.simpleledger.app.ui.components.LedgerCard
 import com.simpleledger.app.ui.components.ScreenScaffold
 import com.simpleledger.app.ui.components.balanceColor
@@ -99,10 +99,12 @@ fun HomeScreen(onPerson: (String) -> Unit, onAddPerson: () -> Unit, onSettings: 
     val ui by vm.ui.collectAsStateWithLifecycle()
     var showHidden by rememberSaveable { mutableStateOf(false) }
 
+    // No title here: the top bar holds the main action instead, highlighted in yellow.
     ScreenScaffold(
-        title = stringResource(R.string.home_title),
+        title = null,
         onBack = null,
         actions = {
+            HighlightButton(stringResource(R.string.add_person), onAddPerson, Modifier.weight(1f))
             TextButton(onClick = onSettings, modifier = Modifier.heightIn(min = 64.dp)) {
                 Text(stringResource(R.string.settings), style = MaterialTheme.typography.titleMedium)
             }
@@ -134,7 +136,6 @@ fun HomeScreen(onPerson: (String) -> Unit, onAddPerson: () -> Unit, onSettings: 
                     Text(Money.format(ui.youOwe), style = MaterialTheme.typography.headlineMedium, color = LedgerColors.gaveText)
                 }
             }
-            item { BigButton(stringResource(R.string.add_person), onAddPerson) }
             if (ui.loaded && ui.visible.isEmpty() && ui.hidden.isEmpty()) {
                 item { Text(stringResource(R.string.no_people), style = MaterialTheme.typography.titleMedium) }
             }

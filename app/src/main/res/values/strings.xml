@@ -22,7 +22,7 @@
     <string name="people_owe_you">People owe you</string>
     <string name="you_owe_total">You owe</string>
     <string name="add_person">+ Add person</string>
-    <string name="no_people">No one here yet. Tap \"Add person\" to start.</string>
+    <string name="no_people">No one here yet. Tap the yellow \"Add person\" button at the top to start.</string>
     <string name="show_hidden">Show hidden people (%1$d)</string>
     <string name="hide_hidden">Hide hidden people</string>
     <string name="banner_chain_broken">Some records may have been changed outside this app. Please check with a family member.</string>
@@ -61,6 +61,21 @@
     <string name="show_person">Show on home screen</string>
     <string name="history">History</string>
     <string name="no_entries">No entries yet. Use the buttons above to record money.</string>
+    <string name="table_hint">Swipe the table sideways to see all columns →</string>
+    <string name="col_date">Date</string>
+    <string name="col_gave">You gave ↑</string>
+    <string name="col_got">You got ↓</string>
+    <string name="col_balance">Balance</string>
+    <string name="col_note">Note</string>
+    <string name="col_type">Type</string>
+    <string name="col_status">Status</string>
+    <string name="col_saved">Saved on</string>
+    <string name="type_gave">Money given</string>
+    <string name="type_got">Money received</string>
+    <string name="type_interest">Interest</string>
+    <string name="bal_they_owe">owes you</string>
+    <string name="bal_you_owe">you owe</string>
+    <string name="bal_settled">settled</string>
 
     <!-- Entries -->
     <string name="entry_gave">You gave %1$s</string>

@@ -11,6 +11,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -191,11 +193,11 @@ fun AddEntryScreen(personId: String, direction: Direction, onBack: () -> Unit, o
                         }
                     }
                     if (showNote || vm.note.isNotEmpty()) {
-                        BigTextField(vm.note, { vm.note = it }, stringResource(R.string.note_label))
+                        BigTextField(vm.note, { vm.note = it }, stringResource(R.string.note_label), multiLine = true)
                     } else {
                         BigOutlinedButton(stringResource(R.string.add_note), { showNote = true })
                     }
-                    BigOutlinedButton(stringResource(R.string.change_date), { showPicker = true })
+                    BigOutlinedButton(stringResource(R.string.change_date), { showPicker = true }, icon = Icons.Filled.DateRange)
                     BigButton(
                         stringResource(R.string.save),
                         { vm.save(onSaved) },

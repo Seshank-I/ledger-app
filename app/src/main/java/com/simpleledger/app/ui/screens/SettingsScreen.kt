@@ -188,7 +188,7 @@ fun SettingsScreen(onBack: () -> Unit, onPin: (String) -> Unit) {
             val pending = vm.pendingRestore
             if (pending != null) {
                 LedgerCard {
-                    val lastEntry = pending.entries.maxByOrNull { it.seq }?.let { Dates.formatIso(it.occurredOn) } ?: stringResource(R.string.never)
+                    val lastEntry = pending.entries.maxOfOrNull { it.occurredOn }?.let { Dates.formatIso(it) } ?: stringResource(R.string.never)
                     Text(
                         stringResource(R.string.restore_summary, pending.people.size, pending.entries.size, lastEntry),
                         style = MaterialTheme.typography.titleMedium,

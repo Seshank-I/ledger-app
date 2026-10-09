@@ -55,9 +55,14 @@ object Rates {
 object Dates {
     private val DAY = DateTimeFormatter.ofPattern("d MMM yyyy", Locale.ENGLISH)
     private val DAY_TIME = DateTimeFormatter.ofPattern("d MMM yyyy, h:mm a", Locale.ENGLISH)
+    private val DAY_MONTH = DateTimeFormatter.ofPattern("d MMM", Locale.ENGLISH)
+    private val YEAR = DateTimeFormatter.ofPattern("yyyy", Locale.ENGLISH)
 
     fun format(d: LocalDate): String = d.format(DAY)
     fun formatIso(iso: String): String = format(LocalDate.parse(iso))
+
+    /** "15 Aug" over "2026": a narrow two-line date for the history table's fixed column. */
+    fun tableDate(iso: String): Pair<String, String> = LocalDate.parse(iso).let { it.format(DAY_MONTH) to it.format(YEAR) }
     fun formatMillis(ms: Long): String = Instant.ofEpochMilli(ms).atZone(ZoneId.systemDefault()).format(DAY_TIME)
     fun dateOfMillis(ms: Long): LocalDate = Instant.ofEpochMilli(ms).atZone(ZoneId.systemDefault()).toLocalDate()
 }
