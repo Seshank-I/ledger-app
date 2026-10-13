@@ -2,10 +2,12 @@ package com.simpleledger.app.share
 
 import android.content.ActivityNotFoundException
 import android.content.ClipData
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.net.Uri
+import android.util.Log
 import androidx.core.content.FileProvider
 import com.simpleledger.app.R
 import kotlinx.coroutines.Dispatchers
@@ -14,6 +16,7 @@ import java.io.File
 
 /** Saves statement pages as PNG files and hands them to WhatsApp or the share sheet. */
 object StatementSharer {
+    private const val TAG = "SimpleLedger"
     private val WHATSAPP_PACKAGES = listOf("com.whatsapp", "com.whatsapp.w4b")
 
     suspend fun save(context: Context, pages: List<Bitmap>, baseName: String): List<Uri> = withContext(Dispatchers.IO) {
@@ -44,17 +47,55 @@ object StatementSharer {
             .also { it.clipData = clip }
     }
 
-    /** Opens WhatsApp (or WhatsApp Business) directly. Returns false if neither is installed. */
-    fun sendToWhatsApp(context: Context, uris: List<Uri>, caption: String): Boolean {
+    sealed interface Result {
+        data object Opened : Result
+        data object NotInstalled : Result
+        data class Failed(val reason: String) : Result
+    }
+
+    /**
+     * WhatsApp's chat id for an Indian mobile number: "98765 43210" or "+91 98765 43210" → "919876543210@s.whatsapp.net".
+     * Returns null when the number does not look like one.
+     */
+    fun whatsAppId(phone: String?): String? {
+        val digits = phone?.filter { it.isDigit() } ?: return null
+        val national = when {
+            digits.length == 10 -> "91$digits"
+            digits.length == 11 && digits.startsWith("0") -> "91${digits.drop(1)}"
+            digits.length == 12 && digits.startsWith("91") -> digits
+            else -> return null
+        }
+        return "$national@s.whatsapp.net"
+    }
+
+    /**
+     * Opens WhatsApp (or WhatsApp Business). With [phone], it goes straight to that person's chat
+     * using WhatsApp's "jid" extra (widely used, but not an official API: if WhatsApp ignores it,
+     * its own contact list opens instead).
+     */
+    fun sendToWhatsApp(context: Context, uris: List<Uri>, caption: String, phone: String? = null): Result {
+        val jid = whatsAppId(phone)
         for (pkg in WHATSAPP_PACKAGES) {
             try {
-                context.startActivity(sendIntent(uris, caption).setPackage(pkg))
-                return true
+                val intent = sendIntent(uris, caption).setPackage(pkg)
+                // Name WhatsApp's exact share screen. Asking for the package alone fails silently on
+                // Android 16 Samsung phones with Dual Messenger (two WhatsApps): Samsung's automatic
+                // "which WhatsApp" step is blocked by Android's intent-redirect protection. Naming the
+                // screen makes Samsung show its picker instead, and with one WhatsApp it opens directly.
+                val target = context.packageManager.queryIntentActivities(intent, 0).firstOrNull()?.activityInfo
+                    ?: continue
+                intent.component = ComponentName(target.packageName, target.name)
+                if (jid != null) intent.putExtra("jid", jid)
+                context.startActivity(intent)
+                return Result.Opened
             } catch (e: ActivityNotFoundException) {
                 // Try the next WhatsApp variant.
+            } catch (e: Exception) {
+                Log.w(TAG, "Could not open $pkg", e)
+                return Result.Failed(e.javaClass.simpleName + (e.message?.let { ": $it" } ?: ""))
             }
         }
-        return false
+        return Result.NotInstalled
     }
 
     fun sendAnyWay(context: Context, uris: List<Uri>, caption: String) {

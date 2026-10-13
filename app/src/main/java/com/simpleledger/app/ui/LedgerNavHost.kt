@@ -51,6 +51,13 @@ fun LedgerNavHost() {
                 onSaved = { id -> nav.navigate("person/$id") { popUpTo("addPerson") { inclusive = true } } },
             )
         }
+        composable("editPerson/{personId}") { entry ->
+            AddPersonScreen(
+                onBack = nav::back,
+                onSaved = { nav.back() },
+                editPersonId = entry.arguments?.getString("personId"),
+            )
+        }
         composable("person/{personId}") { entry ->
             val id = entry.arguments?.getString("personId").orEmpty()
             PersonScreen(
@@ -62,6 +69,7 @@ fun LedgerNavHost() {
                 onAddInterest = { nav.navigate("addInterest/$id") },
                 onShare = { nav.navigate("share/$id") },
                 onHeard = { nav.openVoice(it, id) },
+                onEdit = { nav.navigate("editPerson/$id") },
             )
         }
         composable(
@@ -97,7 +105,8 @@ fun LedgerNavHost() {
             AddInterestScreen(personId = entry.arguments?.getString("personId").orEmpty(), onBack = nav::back)
         }
         composable("share/{personId}") { entry ->
-            ShareStatementScreen(personId = entry.arguments?.getString("personId").orEmpty(), onBack = nav::back)
+            val id = entry.arguments?.getString("personId").orEmpty()
+            ShareStatementScreen(personId = id, onBack = nav::back, onEditPerson = { nav.navigate("editPerson/$id") })
         }
         composable(
             "voice/{heard}?person={person}",

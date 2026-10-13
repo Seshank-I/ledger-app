@@ -8,7 +8,11 @@ import com.simpleledger.app.data.AppPrefs
 import com.simpleledger.app.data.LedgerRepository
 import com.simpleledger.app.security.LockState
 import com.simpleledger.app.security.PinManager
+import com.simpleledger.app.voice.OnDeviceAi
 import com.simpleledger.app.voice.Speaker
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.Dispatchers
 
 /** Creates the app's long-lived objects once. Screens get them through [LedgerApp]. */
 class AppContainer(private val context: Context) {
@@ -21,6 +25,10 @@ class AppContainer(private val context: Context) {
     val lock = LockState(initiallyLocked = pin.isEnabled())
     val backup = BackupManager(context, db, repo, prefs)
     val drive = DriveBackup(backup, prefs)
+
+    /** Work that outlives a screen, such as downloading the on-device model. */
+    val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    val ai = OnDeviceAi(appScope)
 
     /** Text-to-speech starts only when something is first read aloud. */
     val speaker by lazy { Speaker(context) }

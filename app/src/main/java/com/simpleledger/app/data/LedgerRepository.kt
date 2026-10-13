@@ -43,6 +43,10 @@ class LedgerRepository(
         return id
     }
 
+    /** Name and phone can be corrected; they are not money records. */
+    suspend fun updatePerson(personId: String, name: String, phone: String?) =
+        dao.updatePerson(personId, name.trim(), phone?.trim()?.ifBlank { null })
+
     suspend fun setHidden(personId: String, hidden: Boolean) = dao.setHidden(personId, hidden)
 
     /**

@@ -106,14 +106,14 @@ class ShareStatementViewModel(c: AppContainer, personId: String) : ViewModel() {
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun ShareStatementScreen(personId: String, onBack: () -> Unit) {
+fun ShareStatementScreen(personId: String, onBack: () -> Unit, onEditPerson: () -> Unit) {
     val c = appContainer()
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val vm: ShareStatementViewModel = viewModel(key = "share-$personId") { ShareStatementViewModel(c, personId) }
     val data by vm.data.collectAsStateWithLifecycle()
     val total = data.rows.size
-    var message by remember { mutableStateOf<Int?>(null) }
+    var message by remember { mutableStateOf<String?>(null) }
     var busy by remember { mutableStateOf(false) }
 
     LaunchedEffect(data, vm.count, vm.includeNotes) { vm.refreshPreview(context) }
@@ -131,7 +131,7 @@ fun ShareStatementScreen(personId: String, onBack: () -> Unit) {
                 BigButton(stringResource(R.string.go_back), onBack)
                 return@Column
             }
-            message?.let { Banner(stringResource(it), critical = true) }
+            message?.let { Banner(it, critical = true) }
 
             Text(stringResource(R.string.share_how_many), style = MaterialTheme.typography.titleLarge)
             FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -163,24 +163,50 @@ fun ShareStatementScreen(personId: String, onBack: () -> Unit) {
                 )
             }
 
-            BigButton(
-                stringResource(R.string.share_whatsapp),
-                {
-                    busy = true
-                    scope.launch {
-                        vm.files(context)?.let { (uris, caption) ->
-                            if (!StatementSharer.sendToWhatsApp(context, uris, caption)) {
-                                message = R.string.share_no_whatsapp
+            val name = data.person?.name.orEmpty()
+            val phone = data.person?.phone
+            val hasWhatsAppNumber = StatementSharer.whatsAppId(phone) != null
+            val notInstalled = stringResource(R.string.share_no_whatsapp)
+            val failedTemplate = stringResource(R.string.share_failed)
+            fun send(toPerson: Boolean) {
+                busy = true
+                message = null
+                scope.launch {
+                    vm.files(context)?.let { (uris, caption) ->
+                        when (val r = StatementSharer.sendToWhatsApp(context, uris, caption, phone.takeIf { toPerson })) {
+                            StatementSharer.Result.Opened -> Unit
+                            StatementSharer.Result.NotInstalled -> {
+                                message = notInstalled
                                 StatementSharer.sendAnyWay(context, uris, caption)
                             }
+                            is StatementSharer.Result.Failed -> message = failedTemplate.format(r.reason)
                         }
-                        busy = false
                     }
-                },
-                enabled = !busy,
-                containerColor = LedgerColors.gotButton,
-                contentColor = Color.White,
-            )
+                    busy = false
+                }
+            }
+
+            if (hasWhatsAppNumber) {
+                // Straight to this person's own WhatsApp chat, using the number saved for them.
+                BigButton(
+                    stringResource(R.string.share_to_person, name),
+                    { send(toPerson = true) },
+                    enabled = !busy,
+                    containerColor = LedgerColors.gotButton,
+                    contentColor = Color.White,
+                )
+                BigOutlinedButton(stringResource(R.string.share_to_someone_else), { send(toPerson = false) }, enabled = !busy)
+            } else {
+                BigButton(
+                    stringResource(R.string.share_whatsapp),
+                    { send(toPerson = false) },
+                    enabled = !busy,
+                    containerColor = LedgerColors.gotButton,
+                    contentColor = Color.White,
+                )
+                Text(stringResource(R.string.share_add_phone_hint, name), style = MaterialTheme.typography.bodyLarge, color = LedgerColors.muted)
+                BigOutlinedButton(stringResource(R.string.share_add_phone, name), onEditPerson)
+            }
             BigOutlinedButton(
                 stringResource(R.string.share_other),
                 {

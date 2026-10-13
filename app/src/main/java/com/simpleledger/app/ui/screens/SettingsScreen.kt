@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.FlowRow
 import com.simpleledger.app.backup.DriveBackup
 import com.simpleledger.app.backup.DriveBackupWorker
 import com.simpleledger.app.data.AppPrefs
+import com.simpleledger.app.voice.OnDeviceAi
 import com.simpleledger.app.ui.components.ChoiceButton
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_WEAK
@@ -82,6 +83,7 @@ class SettingsViewModel(private val c: AppContainer) : ViewModel() {
             entryCount = c.repo.entryCount()
             isEmpty = c.repo.isEmpty()
             chainOk = c.repo.verifyChain() == null
+            aiStatus = c.ai.status()
         }
     }
 
@@ -147,6 +149,8 @@ class SettingsViewModel(private val c: AppContainer) : ViewModel() {
 
     var voiceLanguage by mutableStateOf(c.prefs.voiceLanguage)
         private set
+    var aiStatus by mutableStateOf<OnDeviceAi.Status?>(null)
+        private set
 
     fun changeVoiceLanguage(language: String) {
         c.prefs.voiceLanguage = language
@@ -176,10 +180,10 @@ class SettingsViewModel(private val c: AppContainer) : ViewModel() {
                 }
                 DriveBackup.Outcome.NothingNew -> show(R.string.drive_nothing_new, false)
                 is DriveBackup.Outcome.NeedsApproval -> outcome.intent?.let(askUser) ?: show(R.string.drive_not_set_up, true)
-                is DriveBackup.Outcome.Failed -> show(
+                is DriveBackup.Outcome.Failed -> android.util.Log.w("SimpleLedger", "Drive backup failed", outcome.error).let { show(
                     if (c.prefs.driveEnabled) R.string.drive_failed else R.string.drive_not_set_up,
                     true,
-                )
+                ) }
             }
             driveBusy = false
         }
@@ -193,8 +197,14 @@ class SettingsViewModel(private val c: AppContainer) : ViewModel() {
             driveConnected()
             backUpToDrive(context, askUser = {}, force = true)
         } catch (e: Exception) {
+            android.util.Log.w("SimpleLedger", "Drive approval failed", e)
             show(R.string.drive_not_set_up, true)
         }
+    }
+
+    /** Google closed its screen without giving access: usually the one-time Google setup is not done yet. */
+    fun driveNotApproved() {
+        show(R.string.drive_not_approved, true)
     }
 
     private fun driveConnected() {
@@ -240,7 +250,7 @@ fun SettingsScreen(onBack: () -> Unit, onPin: (String) -> Unit) {
         uri?.let(vm::readForRestore)
     }
     val driveApproval = rememberLauncherForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) { result ->
-        if (result.resultCode == android.app.Activity.RESULT_OK) vm.onDriveApproval(context, result.data)
+        if (result.resultCode == android.app.Activity.RESULT_OK) vm.onDriveApproval(context, result.data) else vm.driveNotApproved()
     }
     val askUser: (android.app.PendingIntent) -> Unit = { pi ->
         driveApproval.launch(IntentSenderRequest.Builder(pi.intentSender).build())
@@ -334,6 +344,20 @@ fun SettingsScreen(onBack: () -> Unit, onPin: (String) -> Unit) {
                 ChoiceButton(stringResource(R.string.voice_telugu), selected = vm.voiceLanguage == AppPrefs.VOICE_TELUGU) {
                     vm.changeVoiceLanguage(AppPrefs.VOICE_TELUGU)
                 }
+            }
+
+            vm.aiStatus?.let { status ->
+                Text(
+                    stringResource(
+                        when (status) {
+                            OnDeviceAi.Status.READY -> R.string.ai_ready
+                            OnDeviceAi.Status.DOWNLOADING -> R.string.ai_downloading
+                            OnDeviceAi.Status.NOT_SUPPORTED -> R.string.ai_not_supported
+                        },
+                    ),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = LedgerColors.muted,
+                )
             }
 
             // Records check

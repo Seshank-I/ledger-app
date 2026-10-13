@@ -14,6 +14,9 @@ interface LedgerDao {
     @Insert
     suspend fun insertPerson(person: PersonEntity)
 
+    @Query("UPDATE person SET name = :name, phone = :phone WHERE id = :id")
+    suspend fun updatePerson(id: String, name: String, phone: String?)
+
     @Query("UPDATE person SET hidden = :hidden WHERE id = :id")
     suspend fun setHidden(id: String, hidden: Boolean)
 

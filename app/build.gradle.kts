@@ -28,10 +28,6 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    kotlinOptions {
-        jvmTarget = "17"
-    }
-
     buildFeatures {
         compose = true
         buildConfig = true
@@ -41,6 +37,12 @@ android {
         unitTests {
             isIncludeAndroidResources = true
         }
+    }
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
     }
 }
 
@@ -66,6 +68,7 @@ dependencies {
     ksp(libs.androidx.room.compiler)
     implementation(libs.androidx.biometric)
     implementation(libs.androidx.work.runtime.ktx)
+    implementation(libs.mlkit.genai.prompt)
     implementation(libs.play.services.auth)
     implementation(libs.kotlinx.coroutines.play.services)
     debugImplementation(libs.androidx.compose.ui.tooling)

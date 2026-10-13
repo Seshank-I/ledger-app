@@ -110,6 +110,7 @@ fun PersonScreen(
     onAddInterest: () -> Unit,
     onShare: () -> Unit,
     onHeard: (String) -> Unit,
+    onEdit: () -> Unit,
 ) {
     val c = appContainer()
     val vm: PersonViewModel = viewModel(key = "person-$personId") { PersonViewModel(c, personId) }
@@ -213,6 +214,7 @@ fun PersonScreen(
                     modifier = Modifier.padding(bottom = GAP),
                 )
             }
+            item { BigOutlinedButton(stringResource(R.string.edit_person), onEdit, modifier = Modifier.padding(bottom = GAP)) }
             item {
                 BigOutlinedButton(
                     stringResource(if (person.hidden) R.string.show_person else R.string.hide_person),

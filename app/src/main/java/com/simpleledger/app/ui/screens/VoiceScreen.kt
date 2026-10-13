@@ -12,6 +12,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -34,7 +35,8 @@ import com.simpleledger.app.ui.components.balanceColor
 import com.simpleledger.app.ui.components.balanceSentence
 import com.simpleledger.app.ui.theme.LedgerColors
 import com.simpleledger.app.voice.VoiceCommand
-import com.simpleledger.app.voice.VoiceParser
+import com.simpleledger.app.voice.Understood
+import com.simpleledger.app.voice.VoiceUnderstanding
 import com.simpleledger.app.voice.rememberVoiceInput
 import java.time.LocalDate
 
@@ -55,7 +57,18 @@ fun VoiceScreen(
     val c = appContainer()
     val people by c.repo.observePeople().collectAsStateWithLifecycle(initialValue = null)
     val all = people ?: return
-    val command = remember(heard, all) { VoiceParser.parse(heard, all, currentPersonId) }
+    // On-device Gemini where the phone has it, combined with the rules; rules alone elsewhere.
+    val understood by produceState<Understood?>(initialValue = null, heard, all) {
+        value = VoiceUnderstanding.merge(heard, all, currentPersonId, c.ai.understand(heard, all))
+    }
+    val result = understood
+    if (result == null) {
+        ScreenScaffold(title = stringResource(R.string.voice_title), onBack = onBack) { padding ->
+            Text(stringResource(R.string.voice_understanding), style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(padding).padding(16.dp))
+        }
+        return
+    }
+    val command = result.command
     var pickedPerson by rememberSaveable { mutableStateOf<String?>(null) }
     var pickedDirection by rememberSaveable { mutableStateOf<Direction?>(null) }
     var unavailable by remember { mutableStateOf(false) }
@@ -87,7 +100,14 @@ fun VoiceScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             if (unavailable) Banner(stringResource(R.string.voice_unavailable), critical = true)
-            LedgerCard { Text(stringResource(R.string.voice_heard, heard), style = MaterialTheme.typography.titleLarge) }
+            LedgerCard {
+                Text(stringResource(R.string.voice_heard, heard), style = MaterialTheme.typography.titleLarge)
+                Text(
+                    stringResource(if (result.usedAi) R.string.voice_by_ai else R.string.voice_by_rules),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = LedgerColors.muted,
+                )
+            }
 
             when {
                 all.isEmpty() -> Text(stringResource(R.string.voice_no_people), style = MaterialTheme.typography.titleMedium)

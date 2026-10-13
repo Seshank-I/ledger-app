@@ -57,6 +57,8 @@
     <string name="add_interest">Add interest</string>
     <string name="set_interest">Set interest</string>
     <string name="change_interest">Change interest</string>
+    <string name="edit_person">Edit name or phone</string>
+    <string name="edit_person_title">Edit person</string>
     <string name="hide_person">Hide from home screen</string>
     <string name="show_person">Show on home screen</string>
     <string name="history">History</string>
@@ -187,6 +189,11 @@
     <string name="share_include_notes">Include notes</string>
     <string name="share_pages_note">More than %1$d entries are sent as several pictures.</string>
     <string name="share_whatsapp">Send on WhatsApp</string>
+    <string name="share_to_person">Send to %1$s on WhatsApp</string>
+    <string name="share_to_someone_else">Send to someone else on WhatsApp</string>
+    <string name="share_add_phone_hint">Save %1$s\'s phone number to send straight to their WhatsApp chat.</string>
+    <string name="share_add_phone">Add %1$s\'s phone number</string>
+    <string name="share_failed">Could not open WhatsApp (%1$s). Try \"Send another way\".</string>
     <string name="share_other">Send another way</string>
     <string name="share_preview">Preview</string>
     <string name="share_no_whatsapp">WhatsApp is not installed. Choose another app.</string>
@@ -213,6 +220,12 @@
     <string name="voice_telugu">తెలుగు (Telugu)</string>
     <string name="voice_prompt">Say: “I gave Ramesh 500”</string>
     <string name="voice_open_person">Open %1$s\'s page</string>
+    <string name="voice_understanding">Understanding…</string>
+    <string name="voice_by_ai">Understood by Gemini on this phone (nothing was sent anywhere).</string>
+    <string name="voice_by_rules">Understood by the app\'s built-in rules.</string>
+    <string name="ai_ready">Voice is understood by Gemini on this phone. Nothing is sent anywhere.</string>
+    <string name="ai_downloading">Gemini is downloading on this phone. Until it is ready, voice uses the built-in rules.</string>
+    <string name="ai_not_supported">This phone does not have on-device Gemini, so voice uses the built-in rules.</string>
     <string name="voice_no_people">Add a person first, then you can speak entries for them.</string>
 
     <!-- Google Drive backup -->
@@ -227,6 +240,7 @@
     <string name="drive_reconnect">Google Drive needs to be connected again.</string>
     <string name="drive_done">Backed up to Google Drive.</string>
     <string name="drive_nothing_new">Nothing new since the last Drive backup.</string>
+    <string name="drive_not_approved">Google did not give access to Drive. This happens until the one-time Google setup for this app is done (see the setup steps).</string>
     <string name="drive_failed">Could not back up to Google Drive. It will try again later.</string>
     <string name="drive_not_set_up">Google Drive could not be connected. The one-time Google setup for this app may not be done yet (see README).</string>
 </resources>

@@ -7,6 +7,15 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
 
+    <!--
+      Since Android 11 an app can only see the other apps it names here. Without this, asking
+      for WhatsApp by name fails with "not found" even when WhatsApp is installed.
+    -->
+    <queries>
+        <package android:name="com.whatsapp" />
+        <package android:name="com.whatsapp.w4b" />
+    </queries>
+
     <application
         android:name=".LedgerApp"
         android:allowBackup="true"

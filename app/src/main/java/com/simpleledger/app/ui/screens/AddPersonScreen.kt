@@ -19,6 +19,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -36,6 +37,7 @@ import com.simpleledger.app.ui.components.BigButton
 import com.simpleledger.app.ui.components.BigOutlinedButton
 import com.simpleledger.app.ui.components.BigTextField
 import com.simpleledger.app.ui.components.ScreenScaffold
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 /** Opens the phone's contact list to pick one phone number. Needs no Contacts permission. */
@@ -61,7 +63,7 @@ private fun readContact(context: Context, uri: Uri): Pair<String, String?>? = tr
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun AddPersonScreen(onBack: () -> Unit, onSaved: (String) -> Unit) {
+fun AddPersonScreen(onBack: () -> Unit, onSaved: (String) -> Unit, editPersonId: String? = null) {
     val c = appContainer()
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -69,6 +71,18 @@ fun AddPersonScreen(onBack: () -> Unit, onSaved: (String) -> Unit) {
     var phone by rememberSaveable { mutableStateOf("") }
     var error by rememberSaveable { mutableStateOf<Int?>(null) }
     var saving by remember { mutableStateOf(false) }
+
+    // When editing, start from the saved name and phone (once).
+    var loaded by rememberSaveable { mutableStateOf(editPersonId == null) }
+    if (!loaded && editPersonId != null) {
+        LaunchedEffect(editPersonId) {
+            c.repo.observePerson(editPersonId).first()?.let {
+                name = it.name
+                phone = it.phone.orEmpty()
+            }
+            loaded = true
+        }
+    }
 
     val picker = rememberLauncherForActivityResult(PickPhoneContact()) { uri ->
         if (uri != null) {
@@ -83,7 +97,7 @@ fun AddPersonScreen(onBack: () -> Unit, onSaved: (String) -> Unit) {
         }
     }
 
-    ScreenScaffold(title = stringResource(R.string.add_person_title), onBack = onBack) { padding ->
+    ScreenScaffold(title = stringResource(if (editPersonId == null) R.string.add_person_title else R.string.edit_person_title), onBack = onBack) { padding ->
         Column(
             modifier = Modifier
                 .padding(padding)
@@ -108,7 +122,14 @@ fun AddPersonScreen(onBack: () -> Unit, onSaved: (String) -> Unit) {
                     error = R.string.name_required
                 } else {
                     saving = true
-                    scope.launch { onSaved(c.repo.addPerson(name, phone)) }
+                    scope.launch {
+                        if (editPersonId == null) {
+                            onSaved(c.repo.addPerson(name, phone))
+                        } else {
+                            c.repo.updatePerson(editPersonId, name, phone)
+                            onSaved(editPersonId)
+                        }
+                    }
                 }
             })
         }
