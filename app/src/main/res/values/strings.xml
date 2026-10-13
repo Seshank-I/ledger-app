@@ -176,4 +176,57 @@
     <string name="fingerprint_title">Unlock Simple Ledger</string>
     <string name="use_pin">Use PIN</string>
     <string name="unlock_fingerprint_button">Use fingerprint</string>
+    <!-- Share statement -->
+    <string name="send_statement">Send statement on WhatsApp</string>
+    <string name="share_title">Send statement to</string>
+    <string name="share_title_for">Statement for %1$s</string>
+    <string name="share_how_many">How many entries to send?</string>
+    <string name="share_last_n">Last %1$d</string>
+    <string name="share_all_n">All %1$d</string>
+    <string name="share_rows_count">%1$d entries</string>
+    <string name="share_include_notes">Include notes</string>
+    <string name="share_pages_note">More than %1$d entries are sent as several pictures.</string>
+    <string name="share_whatsapp">Send on WhatsApp</string>
+    <string name="share_other">Send another way</string>
+    <string name="share_preview">Preview</string>
+    <string name="share_no_whatsapp">WhatsApp is not installed. Choose another app.</string>
+    <string name="no_entries_short">No entries yet.</string>
+    <string name="statement_title">%1$s — account statement</string>
+    <string name="statement_last">Last %1$d of %2$d entries · made on %3$s</string>
+    <string name="statement_all">All %1$d entries · made on %2$s</string>
+    <string name="statement_page">Page %1$d of %2$d</string>
+    <string name="statement_footer">Made with Simple Ledger</string>
+
+    <!-- Voice -->
+    <string name="speak">🎤  Speak</string>
+    <string name="voice_title">Voice</string>
+    <string name="voice_heard">I heard: “%1$s”</string>
+    <string name="voice_not_understood">Sorry, I did not understand. Try saying “I gave Ramesh 500” or “Got 2000 from Sita”.</string>
+    <string name="voice_who">Who was it?</string>
+    <string name="voice_which_way">Did you give money or get money?</string>
+    <string name="voice_try_again">🎤  Try again</string>
+    <string name="voice_type_instead">Enter it by hand</string>
+    <string name="voice_unavailable">Voice input is not available on this phone.</string>
+    <string name="voice_language">Voice language</string>
+    <string name="voice_language_now">Speak in: %1$s</string>
+    <string name="voice_english">English</string>
+    <string name="voice_telugu">తెలుగు (Telugu)</string>
+    <string name="voice_prompt">Say: “I gave Ramesh 500”</string>
+    <string name="voice_open_person">Open %1$s\'s page</string>
+    <string name="voice_no_people">Add a person first, then you can speak entries for them.</string>
+
+    <!-- Google Drive backup -->
+    <string name="drive_section">Google Drive backup</string>
+    <string name="drive_off">Automatic daily backup to your Google Drive is off.</string>
+    <string name="drive_on">Backing up daily to Google Drive (%1$s), into the folder “Simple Ledger Backups”.</string>
+    <string name="drive_account_unknown">your Google account</string>
+    <string name="drive_last">Last Drive backup: %1$s</string>
+    <string name="drive_connect">Connect Google Drive</string>
+    <string name="drive_now">Back up to Drive now</string>
+    <string name="drive_turn_off">Turn off Drive backup</string>
+    <string name="drive_reconnect">Google Drive needs to be connected again.</string>
+    <string name="drive_done">Backed up to Google Drive.</string>
+    <string name="drive_nothing_new">Nothing new since the last Drive backup.</string>
+    <string name="drive_failed">Could not back up to Google Drive. It will try again later.</string>
+    <string name="drive_not_set_up">Google Drive could not be connected. The one-time Google setup for this app may not be done yet (see README).</string>
 </resources>

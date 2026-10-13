@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- No INTERNET permission: the app cannot send data anywhere. Data leaves only in a backup the user shares. -->
+<!--
+  Internet is used for one thing only: the optional automatic backup to the user's own Google Drive,
+  which is off until the user connects Drive in Settings. Nothing else is ever sent anywhere.
+-->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="android.permission.INTERNET" />
 
     <application
         android:name=".LedgerApp"

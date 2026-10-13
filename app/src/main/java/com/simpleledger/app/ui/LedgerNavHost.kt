@@ -1,5 +1,6 @@
 package com.simpleledger.app.ui
 
+import android.net.Uri
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavController
 import androidx.navigation.NavType
@@ -17,10 +18,19 @@ import com.simpleledger.app.ui.screens.PersonScreen
 import com.simpleledger.app.ui.screens.PinScreen
 import com.simpleledger.app.ui.screens.SetInterestScreen
 import com.simpleledger.app.ui.screens.SettingsScreen
+import com.simpleledger.app.ui.screens.ShareStatementScreen
+import com.simpleledger.app.ui.screens.VoiceScreen
 
 /** Ignores a second quick tap on Back so it can never pop the home screen. */
 private fun NavController.back() {
     if (previousBackStackEntry != null) popBackStack()
+}
+
+private fun NavController.openVoice(heard: String, personId: String?) {
+    navigate("voice/${Uri.encode(heard)}?person=${personId.orEmpty()}") {
+        // Saying something again replaces the previous voice screen instead of stacking up.
+        popUpTo("voice/{heard}?person={person}") { inclusive = true }
+    }
 }
 
 @Composable
@@ -32,6 +42,7 @@ fun LedgerNavHost() {
                 onPerson = { nav.navigate("person/$it") },
                 onAddPerson = { nav.navigate("addPerson") },
                 onSettings = { nav.navigate("settings") },
+                onHeard = { nav.openVoice(it, null) },
             )
         }
         composable("addPerson") {
@@ -49,14 +60,25 @@ fun LedgerNavHost() {
                 onEntry = { seq -> nav.navigate("entry/$seq") },
                 onSetInterest = { nav.navigate("setInterest/$id") },
                 onAddInterest = { nav.navigate("addInterest/$id") },
+                onShare = { nav.navigate("share/$id") },
+                onHeard = { nav.openVoice(it, id) },
             )
         }
-        composable("add/{personId}/{direction}") { entry ->
+        composable(
+            "add/{personId}/{direction}?amount={amount}&voice={voice}",
+            arguments = listOf(
+                navArgument("amount") { type = NavType.LongType; defaultValue = -1L },
+                navArgument("voice") { type = NavType.BoolType; defaultValue = false },
+            ),
+        ) { entry ->
+            val amount = entry.arguments?.getLong("amount") ?: -1L
             AddEntryScreen(
                 personId = entry.arguments?.getString("personId").orEmpty(),
                 direction = Direction.valueOf(entry.arguments?.getString("direction") ?: Direction.GAVE.name),
                 onBack = nav::back,
                 onSaved = nav::back,
+                prefillPaise = amount.takeIf { it > 0 },
+                fromVoice = entry.arguments?.getBoolean("voice") ?: false,
             )
         }
         composable("entry/{seq}", arguments = listOf(navArgument("seq") { type = NavType.LongType })) { entry ->
@@ -73,6 +95,27 @@ fun LedgerNavHost() {
         }
         composable("addInterest/{personId}") { entry ->
             AddInterestScreen(personId = entry.arguments?.getString("personId").orEmpty(), onBack = nav::back)
+        }
+        composable("share/{personId}") { entry ->
+            ShareStatementScreen(personId = entry.arguments?.getString("personId").orEmpty(), onBack = nav::back)
+        }
+        composable(
+            "voice/{heard}?person={person}",
+            arguments = listOf(navArgument("person") { type = NavType.StringType; defaultValue = "" }),
+        ) { entry ->
+            VoiceScreen(
+                heard = entry.arguments?.getString("heard").orEmpty(),
+                currentPersonId = entry.arguments?.getString("person")?.ifEmpty { null },
+                onBack = nav::back,
+                onHeardAgain = { nav.openVoice(it, entry.arguments?.getString("person")?.ifEmpty { null }) },
+                onComplete = { personId, dir, amount ->
+                    val amountArg = amount?.let { "&amount=$it" }.orEmpty()
+                    nav.navigate("add/$personId/${dir.name}?voice=true$amountArg") {
+                        popUpTo("voice/{heard}?person={person}") { inclusive = true }
+                    }
+                },
+                onOpenPerson = { id -> nav.navigate("person/$id") { popUpTo("voice/{heard}?person={person}") { inclusive = true } } },
+            )
         }
         composable("settings") {
             SettingsScreen(onBack = nav::back, onPin = { mode -> nav.navigate("pin/$mode") })

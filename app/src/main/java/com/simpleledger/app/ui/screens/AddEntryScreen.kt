@@ -17,6 +17,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -56,7 +57,12 @@ import java.time.LocalDate
 
 private const val MAX_DIGITS = 9 // up to ₹99,99,99,999
 
-class AddEntryViewModel(private val c: AppContainer, private val personId: String, val direction: Direction) : ViewModel() {
+class AddEntryViewModel(
+    private val c: AppContainer,
+    private val personId: String,
+    val direction: Direction,
+    prefillPaise: Long? = null,
+) : ViewModel() {
     enum class Step { AMOUNT, CONFIRM }
 
     /** What the confirm screen shows: any interest added first, and the balance afterwards. */
@@ -76,6 +82,14 @@ class AddEntryViewModel(private val c: AppContainer, private val personId: Strin
         private set
 
     val amountPaise: Long get() = Money.rupeesToPaise(digits)
+
+    init {
+        // An amount from voice input skips the number pad and goes straight to the confirm screen.
+        if (prefillPaise != null && prefillPaise >= 100) {
+            digits = (prefillPaise / 100).toString().take(MAX_DIGITS)
+            toConfirm()
+        }
+    }
 
     fun digit(ch: Char) {
         if (digits.length < MAX_DIGITS) digits = (digits + ch).trimStart('0')
@@ -120,9 +134,18 @@ class AddEntryViewModel(private val c: AppContainer, private val personId: Strin
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun AddEntryScreen(personId: String, direction: Direction, onBack: () -> Unit, onSaved: () -> Unit) {
+fun AddEntryScreen(
+    personId: String,
+    direction: Direction,
+    onBack: () -> Unit,
+    onSaved: () -> Unit,
+    prefillPaise: Long? = null,
+    fromVoice: Boolean = false,
+) {
     val c = appContainer()
-    val vm: AddEntryViewModel = viewModel(key = "add-$personId-$direction") { AddEntryViewModel(c, personId, direction) }
+    val vm: AddEntryViewModel = viewModel(key = "add-$personId-$direction-$prefillPaise") {
+        AddEntryViewModel(c, personId, direction, prefillPaise)
+    }
     val person by vm.person.collectAsStateWithLifecycle()
     val name = person?.name.orEmpty()
     val gave = direction == Direction.GAVE
@@ -176,6 +199,10 @@ fun AddEntryScreen(personId: String, direction: Direction, onBack: () -> Unit, o
                         stringResource(R.string.confirm_gave, name, amount, datePhrase(vm.date))
                     } else {
                         stringResource(R.string.confirm_got, amount, name, datePhrase(vm.date))
+                    }
+                    // After voice input, read the entry back aloud so it can be checked without reading.
+                    if (fromVoice) {
+                        LaunchedEffect(sentence) { c.speaker.speak(sentence) }
                     }
                     LedgerCard {
                         Text(sentence, style = MaterialTheme.typography.headlineSmall)

@@ -37,6 +37,37 @@ export JAVA_HOME=$(/usr/libexec/java_home -v 17)
 
 Or open the folder in Android Studio and press ▶ Run.
 
+## Google Drive automatic backup: one-time setup
+
+The app backs up daily to the user's own Google Drive, into a folder "Simple Ledger Backups", keeping the newest
+30 copies. It only uploads when something changed. It uses Google's narrow `drive.file` permission, so it can only
+see files it created, never the rest of the Drive.
+
+Google only lets the app ask for Drive access after this one-time setup in your Google account
+(about 10 minutes, free):
+
+1. Open https://console.cloud.google.com and create a project, e.g. "Simple Ledger".
+2. **APIs & Services → Library** → search "Google Drive API" → **Enable**.
+3. **Google Auth Platform** (called "OAuth consent screen" in older menus):
+   - App name "Simple Ledger", your email as support and developer contact.
+   - Audience: **External**, then **Publish app** so it is "In production". Left in "Testing", Google expires the
+     sign-in every 7 days and the daily backup would stop. `drive.file` is a non-sensitive permission, so
+     publishing should not require Google's review.
+4. **Clients → Create client → Android**:
+   - Package name: `com.simpleledger.app`
+   - SHA-1: `C0:FA:B3:2E:32:56:A2:30:8C:84:B6:81:E5:A7:7B:2E:66:D0:4D:92`
+     (from `~/.android/debug.keystore`; if that file ever changes, this must change too)
+5. On each phone: Settings in the app → **Connect Google Drive** → choose the Google account → Allow.
+
+No code change is needed after the setup. Until it is done, "Connect Google Drive" shows a message that Drive
+could not be connected.
+
+## Voice
+
+The 🎤 Speak button uses the phone's own speech recognizer (Google or Samsung), so the app needs no microphone
+permission. Settings → Voice language chooses English or Telugu. The app reads entries back aloud in English and
+never saves anything from voice without the usual confirm screen.
+
 ## Signing key
 
 Android only lets an app update itself if the new APK is signed with the same key as the old one. Debug builds
@@ -49,7 +80,9 @@ not install over the old one, and the app would have to be uninstalled (losing r
 | --- | --- |
 | `data/` | Database tables, the append-only triggers, and the repository (the only code that writes) |
 | `domain/` | Interest maths, hash chain, money and date formatting. Plain Kotlin, fully unit-tested |
-| `backup/` | Backup file format, share, save and restore |
+| `backup/` | Backup file format, share, save, restore, and the daily Google Drive upload |
 | `security/` | Optional PIN and lock screen state |
+| `share/` | Draws a person's statement as a picture and sends it to WhatsApp |
+| `voice/` | Voice commands: English/Telugu sentence parser, speech input, read-aloud |
 | `ui/` | Screens, theme and the large-text components |
 | `res/values/strings.xml` | Every word the user sees. Copy to `values-hi/` to add Hindi |

@@ -24,13 +24,13 @@ class BackupManager(
 
     fun fileName(): String = "ledger-backup-${LocalDate.now()}.json"
 
-    suspend fun backupJson(): String = withContext(Dispatchers.IO) {
+    suspend fun backupJson(exportedAt: Long = System.currentTimeMillis()): String = withContext(Dispatchers.IO) {
         BackupFormat.toJson(
             BackupContents(
                 people = dao.allPeople(),
                 rates = dao.allRates(),
                 entries = dao.allEntries(),
-                exportedAt = System.currentTimeMillis(),
+                exportedAt = exportedAt,
             ),
         )
     }

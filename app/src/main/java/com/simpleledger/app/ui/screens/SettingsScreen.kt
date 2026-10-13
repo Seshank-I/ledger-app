@@ -4,6 +4,13 @@ import android.content.ActivityNotFoundException
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.result.IntentSenderRequest
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import com.simpleledger.app.backup.DriveBackup
+import com.simpleledger.app.backup.DriveBackupWorker
+import com.simpleledger.app.data.AppPrefs
+import com.simpleledger.app.ui.components.ChoiceButton
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_WEAK
 import androidx.compose.foundation.layout.Arrangement
@@ -66,6 +73,9 @@ class SettingsViewModel(private val c: AppContainer) : ViewModel() {
         private set
 
     fun refresh() {
+        driveEnabled = c.prefs.driveEnabled
+        driveAccount = c.prefs.driveAccount
+        driveNeedsReconnect = c.prefs.driveNeedsReconnect
         pinEnabled = c.pin.isEnabled()
         fingerprint = c.prefs.biometricEnabled
         viewModelScope.launch {
@@ -135,12 +145,82 @@ class SettingsViewModel(private val c: AppContainer) : ViewModel() {
         pendingRestore = null
     }
 
+    var voiceLanguage by mutableStateOf(c.prefs.voiceLanguage)
+        private set
+
+    fun changeVoiceLanguage(language: String) {
+        c.prefs.voiceLanguage = language
+        voiceLanguage = language
+    }
+
+    // --- Google Drive ---
+    val driveLastAt = c.prefs.driveLastAt
+    var driveEnabled by mutableStateOf(c.prefs.driveEnabled)
+        private set
+    var driveAccount by mutableStateOf(c.prefs.driveAccount)
+        private set
+    var driveNeedsReconnect by mutableStateOf(c.prefs.driveNeedsReconnect)
+        private set
+    var driveBusy by mutableStateOf(false)
+        private set
+
+    /** Connects Drive, or backs up now. [askUser] shows Google's approval screen when Google needs one. */
+    fun backUpToDrive(context: android.content.Context, askUser: (android.app.PendingIntent) -> Unit, force: Boolean = true) {
+        if (driveBusy) return
+        driveBusy = true
+        viewModelScope.launch {
+            when (val outcome = c.drive.run(context, force)) {
+                DriveBackup.Outcome.Done -> {
+                    driveConnected()
+                    show(R.string.drive_done, false)
+                }
+                DriveBackup.Outcome.NothingNew -> show(R.string.drive_nothing_new, false)
+                is DriveBackup.Outcome.NeedsApproval -> outcome.intent?.let(askUser) ?: show(R.string.drive_not_set_up, true)
+                is DriveBackup.Outcome.Failed -> show(
+                    if (c.prefs.driveEnabled) R.string.drive_failed else R.string.drive_not_set_up,
+                    true,
+                )
+            }
+            driveBusy = false
+        }
+    }
+
+    /** Called with Google's answer after the user approved (or declined) on Google's screen. */
+    fun onDriveApproval(context: android.content.Context, data: android.content.Intent?) {
+        try {
+            val result = c.drive.resultFromIntent(context, data)
+            c.drive.remember(result)
+            driveConnected()
+            backUpToDrive(context, askUser = {}, force = true)
+        } catch (e: Exception) {
+            show(R.string.drive_not_set_up, true)
+        }
+    }
+
+    private fun driveConnected() {
+        if (!c.prefs.driveEnabled) c.prefs.driveEnabled = true
+        c.prefs.driveNeedsReconnect = false
+        DriveBackupWorker.schedule(context = appContext)
+        driveEnabled = true
+        driveAccount = c.prefs.driveAccount
+        driveNeedsReconnect = false
+    }
+
+    fun turnOffDrive() {
+        c.prefs.driveEnabled = false
+        DriveBackupWorker.cancel(appContext)
+        driveEnabled = false
+    }
+
+    private val appContext get() = c.appContext
+
     fun changeFingerprint(on: Boolean) {
         c.prefs.biometricEnabled = on
         fingerprint = on
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun SettingsScreen(onBack: () -> Unit, onPin: (String) -> Unit) {
     val c = appContainer()
@@ -159,6 +239,13 @@ fun SettingsScreen(onBack: () -> Unit, onPin: (String) -> Unit) {
     val openLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         uri?.let(vm::readForRestore)
     }
+    val driveApproval = rememberLauncherForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) { result ->
+        if (result.resultCode == android.app.Activity.RESULT_OK) vm.onDriveApproval(context, result.data)
+    }
+    val askUser: (android.app.PendingIntent) -> Unit = { pi ->
+        driveApproval.launch(IntentSenderRequest.Builder(pi.intentSender).build())
+    }
+    val driveLast by vm.driveLastAt.collectAsStateWithLifecycle()
 
     ScreenScaffold(title = stringResource(R.string.settings), onBack = onBack) { padding ->
         Column(
@@ -203,6 +290,25 @@ fun SettingsScreen(onBack: () -> Unit, onPin: (String) -> Unit) {
                 }
             }
 
+            // Google Drive automatic backup
+            Text(stringResource(R.string.drive_section), style = MaterialTheme.typography.headlineSmall)
+            if (!vm.driveEnabled) {
+                Text(stringResource(R.string.drive_off), style = MaterialTheme.typography.titleMedium)
+                BigButton(stringResource(R.string.drive_connect), { vm.backUpToDrive(context, askUser) }, enabled = !vm.driveBusy)
+            } else {
+                Text(
+                    stringResource(R.string.drive_on, vm.driveAccount ?: stringResource(R.string.drive_account_unknown)),
+                    style = MaterialTheme.typography.titleMedium,
+                )
+                val lastDrive = if (driveLast == 0L) stringResource(R.string.never) else Dates.formatMillis(driveLast)
+                Text(stringResource(R.string.drive_last, lastDrive), style = MaterialTheme.typography.titleMedium)
+                if (vm.driveNeedsReconnect) {
+                    Banner(stringResource(R.string.drive_reconnect), critical = true, action = stringResource(R.string.drive_connect) to { vm.backUpToDrive(context, askUser) })
+                }
+                BigOutlinedButton(stringResource(R.string.drive_now), { vm.backUpToDrive(context, askUser) }, enabled = !vm.driveBusy)
+                BigOutlinedButton(stringResource(R.string.drive_turn_off), vm::turnOffDrive)
+            }
+
             // PIN lock
             Text(stringResource(R.string.security_section), style = MaterialTheme.typography.headlineSmall)
             Text(stringResource(if (vm.pinEnabled) R.string.pin_on else R.string.pin_off), style = MaterialTheme.typography.titleMedium)
@@ -217,6 +323,17 @@ fun SettingsScreen(onBack: () -> Unit, onPin: (String) -> Unit) {
                 }
             } else {
                 BigOutlinedButton(stringResource(R.string.turn_on_pin), { onPin("set") })
+            }
+
+            // Voice
+            Text(stringResource(R.string.voice_language), style = MaterialTheme.typography.headlineSmall)
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                ChoiceButton(stringResource(R.string.voice_english), selected = vm.voiceLanguage == AppPrefs.VOICE_ENGLISH) {
+                    vm.changeVoiceLanguage(AppPrefs.VOICE_ENGLISH)
+                }
+                ChoiceButton(stringResource(R.string.voice_telugu), selected = vm.voiceLanguage == AppPrefs.VOICE_TELUGU) {
+                    vm.changeVoiceLanguage(AppPrefs.VOICE_TELUGU)
+                }
             }
 
             // Records check

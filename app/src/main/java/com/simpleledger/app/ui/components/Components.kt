@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -295,5 +296,30 @@ fun LedgerDatePicker(initial: LocalDate, onPicked: (LocalDate) -> Unit, onDismis
         },
     ) {
         DatePicker(state = state)
+    }
+}
+
+/** A large option button; the selected one is filled and ticked. */
+@Composable
+fun ChoiceButton(text: String, selected: Boolean, enabled: Boolean = true, onClick: () -> Unit) {
+    val modifier = Modifier
+        .heightIn(min = 64.dp)
+        .widthIn(min = 72.dp)
+    val shape = RoundedCornerShape(14.dp)
+    if (selected) {
+        Button(onClick = onClick, enabled = enabled, modifier = modifier, shape = shape) {
+            Text("✓ $text", style = MaterialTheme.typography.titleMedium)
+        }
+    } else {
+        OutlinedButton(
+            onClick = onClick,
+            enabled = enabled,
+            modifier = modifier,
+            shape = shape,
+            border = BorderStroke(2.dp, MaterialTheme.colorScheme.outline),
+            colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onSurface),
+        ) {
+            Text(text, style = MaterialTheme.typography.titleMedium)
+        }
     }
 }

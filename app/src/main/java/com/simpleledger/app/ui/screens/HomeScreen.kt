@@ -12,6 +12,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -37,6 +38,7 @@ import com.simpleledger.app.ui.components.LedgerCard
 import com.simpleledger.app.ui.components.ScreenScaffold
 import com.simpleledger.app.ui.components.balanceColor
 import com.simpleledger.app.ui.theme.LedgerColors
+import com.simpleledger.app.voice.rememberVoiceInput
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -93,11 +95,13 @@ class HomeViewModel(c: AppContainer) : ViewModel() {
 }
 
 @Composable
-fun HomeScreen(onPerson: (String) -> Unit, onAddPerson: () -> Unit, onSettings: () -> Unit) {
+fun HomeScreen(onPerson: (String) -> Unit, onAddPerson: () -> Unit, onSettings: () -> Unit, onHeard: (String) -> Unit) {
     val c = appContainer()
     val vm: HomeViewModel = viewModel { HomeViewModel(c) }
     val ui by vm.ui.collectAsStateWithLifecycle()
     var showHidden by rememberSaveable { mutableStateOf(false) }
+    var voiceUnavailable by remember { mutableStateOf(false) }
+    val listen = rememberVoiceInput(onHeard = onHeard, onUnavailable = { voiceUnavailable = true })
 
     // No title here: the top bar holds the main action instead, highlighted in yellow.
     ScreenScaffold(
@@ -118,6 +122,9 @@ fun HomeScreen(onPerson: (String) -> Unit, onAddPerson: () -> Unit, onSettings: 
             if (ui.chainBroken) {
                 item { Banner(stringResource(R.string.banner_chain_broken), critical = true) }
             }
+            if (c.prefs.driveEnabled && c.prefs.driveNeedsReconnect) {
+                item { Banner(stringResource(R.string.drive_reconnect), critical = true, action = stringResource(R.string.drive_connect) to onSettings) }
+            }
             if (ui.backupReminder) {
                 item {
                     val text = if (ui.lastBackupAt == 0L) {
@@ -135,6 +142,10 @@ fun HomeScreen(onPerson: (String) -> Unit, onAddPerson: () -> Unit, onSettings: 
                     Text(stringResource(R.string.you_owe_total), style = MaterialTheme.typography.titleMedium)
                     Text(Money.format(ui.youOwe), style = MaterialTheme.typography.headlineMedium, color = LedgerColors.gaveText)
                 }
+            }
+            if (ui.visible.isNotEmpty() || ui.hidden.isNotEmpty()) {
+                item { BigOutlinedButton(stringResource(R.string.speak), listen) }
+                if (voiceUnavailable) item { Banner(stringResource(R.string.voice_unavailable), critical = true) }
             }
             if (ui.loaded && ui.visible.isEmpty() && ui.hidden.isEmpty()) {
                 item { Text(stringResource(R.string.no_people), style = MaterialTheme.typography.titleMedium) }

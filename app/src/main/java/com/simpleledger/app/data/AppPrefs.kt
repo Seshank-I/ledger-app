@@ -32,10 +32,56 @@ class AppPrefs(context: Context) {
         get() = sp.getBoolean(KEY_BIOMETRIC, false)
         set(value) = sp.edit().putBoolean(KEY_BIOMETRIC, value).apply()
 
-    private companion object {
-        const val KEY_LAST_BACKUP = "last_backup_at"
-        const val KEY_PIN_HASH = "pin_hash"
-        const val KEY_PIN_SALT = "pin_salt"
-        const val KEY_BIOMETRIC = "biometric_enabled"
+    // --- Google Drive automatic backup ---
+    private val _driveLastAt = MutableStateFlow(sp.getLong(KEY_DRIVE_LAST, 0L))
+    val driveLastAt: StateFlow<Long> = _driveLastAt.asStateFlow()
+
+    fun markDriveBackup(now: Long = System.currentTimeMillis()) {
+        sp.edit().putLong(KEY_DRIVE_LAST, now).apply()
+        _driveLastAt.value = now
+        markBackup(now)
+    }
+
+    var driveEnabled: Boolean
+        get() = sp.getBoolean(KEY_DRIVE_ENABLED, false)
+        set(value) = sp.edit().putBoolean(KEY_DRIVE_ENABLED, value).apply()
+
+    var driveAccount: String?
+        get() = sp.getString(KEY_DRIVE_ACCOUNT, null)
+        set(value) = sp.edit().putString(KEY_DRIVE_ACCOUNT, value).apply()
+
+    var driveFolderId: String?
+        get() = sp.getString(KEY_DRIVE_FOLDER, null)
+        set(value) = sp.edit().putString(KEY_DRIVE_FOLDER, value).apply()
+
+    /** Fingerprint of the data last uploaded, so unchanged data is not uploaded again. */
+    var driveFingerprint: String?
+        get() = sp.getString(KEY_DRIVE_FINGERPRINT, null)
+        set(value) = sp.edit().putString(KEY_DRIVE_FINGERPRINT, value).apply()
+
+    var driveNeedsReconnect: Boolean
+        get() = sp.getBoolean(KEY_DRIVE_RECONNECT, false)
+        set(value) = sp.edit().putBoolean(KEY_DRIVE_RECONNECT, value).apply()
+
+    /** Speech recognition language: "en-IN" or "te-IN". */
+    var voiceLanguage: String
+        get() = sp.getString(KEY_VOICE_LANGUAGE, VOICE_ENGLISH) ?: VOICE_ENGLISH
+        set(value) = sp.edit().putString(KEY_VOICE_LANGUAGE, value).apply()
+
+    companion object {
+        const val VOICE_ENGLISH = "en-IN"
+        const val VOICE_TELUGU = "te-IN"
+
+        private const val KEY_LAST_BACKUP = "last_backup_at"
+        private const val KEY_PIN_HASH = "pin_hash"
+        private const val KEY_PIN_SALT = "pin_salt"
+        private const val KEY_BIOMETRIC = "biometric_enabled"
+        private const val KEY_VOICE_LANGUAGE = "voice_language"
+        private const val KEY_DRIVE_LAST = "drive_last_at"
+        private const val KEY_DRIVE_ENABLED = "drive_enabled"
+        private const val KEY_DRIVE_ACCOUNT = "drive_account"
+        private const val KEY_DRIVE_FOLDER = "drive_folder_id"
+        private const val KEY_DRIVE_FINGERPRINT = "drive_fingerprint"
+        private const val KEY_DRIVE_RECONNECT = "drive_needs_reconnect"
     }
 }

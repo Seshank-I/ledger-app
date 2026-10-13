@@ -32,6 +32,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -54,6 +56,7 @@ import com.simpleledger.app.domain.InterestCalculator
 import com.simpleledger.app.domain.Money
 import com.simpleledger.app.domain.Rates
 import com.simpleledger.app.ui.appContainer
+import com.simpleledger.app.ui.components.Banner
 import com.simpleledger.app.ui.components.BigButton
 import com.simpleledger.app.ui.components.BigOutlinedButton
 import com.simpleledger.app.ui.components.LedgerCard
@@ -63,6 +66,7 @@ import com.simpleledger.app.ui.components.balanceSentence
 import com.simpleledger.app.ui.components.directionColor
 import com.simpleledger.app.ui.components.interestPeriod
 import com.simpleledger.app.ui.theme.LedgerColors
+import com.simpleledger.app.voice.rememberVoiceInput
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
@@ -104,6 +108,8 @@ fun PersonScreen(
     onEntry: (Long) -> Unit,
     onSetInterest: () -> Unit,
     onAddInterest: () -> Unit,
+    onShare: () -> Unit,
+    onHeard: (String) -> Unit,
 ) {
     val c = appContainer()
     val vm: PersonViewModel = viewModel(key = "person-$personId") { PersonViewModel(c, personId) }
@@ -113,6 +119,8 @@ fun PersonScreen(
     // One scroll position shared by the header and every row, so all columns move together.
     val tableScroll = rememberScrollState()
     val columns = historyColumns(ui.rows)
+    var voiceUnavailable by remember { mutableStateOf(false) }
+    val listen = rememberVoiceInput(onHeard = onHeard, onUnavailable = { voiceUnavailable = true })
     val dateWidth = fitWidth(
         ui.rows.flatMap { Dates.tableDate(it.entry.occurredOn).toList() } + stringResource(R.string.col_date),
         min = 64.dp,
@@ -175,6 +183,11 @@ fun PersonScreen(
                         contentColor = Color.White,
                     )
                 }
+            }
+            item { BigOutlinedButton(stringResource(R.string.speak), listen, modifier = Modifier.padding(bottom = GAP)) }
+            if (voiceUnavailable) item { Banner(stringResource(R.string.voice_unavailable), critical = true) }
+            if (ui.rows.isNotEmpty()) {
+                item { BigOutlinedButton(stringResource(R.string.send_statement), onShare, modifier = Modifier.padding(bottom = GAP)) }
             }
             item { Text(stringResource(R.string.history), style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(bottom = 8.dp)) }
             if (ui.rows.isEmpty()) {
